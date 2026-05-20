@@ -112,6 +112,8 @@ https://enter.pollinations.ai/authorize
 
 The `state` value is generated client-side and stashed in `sessionStorage` for CSRF verification on return.
 
+The `budget=500` and `expiry=30` shown above are the **defaults used on first Connect**. They are not user-tunable on the first authorize; the user-tunable sliders described in §3.4 apply only to the re-authorize drawer on return visits.
+
 ### 3.2 Consent screen
 
 Pollinations renders the consent UI showing the app name (from the `pk_` metadata), the requested scope, the budget cap, and the expiry. Because `earningsEnabled` is set on the app registration, the consent screen also discloses the +25% surcharge that funds the developer.
@@ -173,6 +175,8 @@ Before first deploy, Dave must log in to `enter.pollinations.ai` and register th
 type Surface = 'image' | 'text' | 'audio';
 type Mode = 'simple' | 'compare' | 'advanced';
 
+type Request = ImageRequest | TextRequest | AudioRequest;
+
 type Run = {
   id: string;              // ulid
   createdAt: number;
@@ -209,7 +213,8 @@ Image results store a blob reference (IndexedDB blob id); text results store the
 ### 4.3 Shareable runs (URL hash)
 
 - `#run=<base64url(compact-json)>` — encodes only the *request* (no result blob, no `id`, no timestamps, no defaults that match documented Pollinations defaults).
-- Target hash payload ≤ 200 bytes for typical inputs.
+- Target hash payload ≤ 200 bytes for typical inputs; **hard cap 1500 bytes** (browsers vary but all support ≥2KB URLs comfortably).
+- If a run exceeds the hard cap, the **Share** button shows "this run is too large to share as a link" and offers two fallbacks: (a) **Copy as JSON** (clipboard), or (b) **Download .pollenrun file** which the recipient can drag onto Pollen Studio to import.
 - Opening such a link routes the user to the appropriate mode, pre-fills the inputs, and shows a **Run with my key** button. Clicking spends the recipient's pollen and produces their own result.
 - `#share=<id>` (separate variant) is for self-shares of historical runs *including* the original result blobs. Resolved locally only; never works on someone else's browser.
 
@@ -274,7 +279,7 @@ Each file has one clear purpose. Stores own their own state and persistence; com
 | No key set | `currentKey() === null` before request | Inline "Connect Pollinations to run" prompt; Generate button doubles as Connect CTA |
 | Key expired | 401 + JWT `exp` past now | Toast + auto-route to `/auth/start` with deep-link return |
 | Budget exhausted | 402 from API | Toast + re-authorize drawer with bigger budget |
-| Rate limit (Flower: 1 req/3s) | 429 | Defensive: Compare mode already paces requests 3.1s apart client-side; on 429, exponential backoff |
+| Rate limit (Flower tier: 1 req/3s per Pollinations API docs, May 2026) | 429 | Defensive: Compare mode already paces requests 3.1s apart client-side; on 429, exponential backoff. Pacing constant lives in `lib/pollinations/client.ts` and must be revisited if Pollinations changes their published limit. |
 | Model unavailable | 404 or specific error code | Cell shows "model unavailable", offers nearest substitute from `models.ts` |
 | Network / 5xx | fetch reject or 5xx | Cell error state with Retry; MatrixGrid offers Bulk Retry |
 | Quota near full (IDB ≥ 80%) | `navigator.storage.estimate()` | Non-blocking banner: Purge old / Export & wipe |
@@ -284,7 +289,7 @@ Each file has one clear purpose. Stores own their own state and persistence; com
 
 - **Unit (Vitest):** `auth.ts` (URL build, fragment parse, state verify), `share.svelte.ts` (round-trip encode/decode), `pricing.ts` (cost estimates), `idb.ts` (CRUD against `fake-indexeddb`).
 - **Component (Vitest + `@testing-library/svelte`):** `PromptBox` autosize, `AxisBuilder` chip combinations, `MatrixGrid` renders N cells, `KeyConnect` detects `sk_`/`pk_` prefix.
-- **Integration (Playwright against a mock Pollinations server):** full happy path `connect → simple run → save to gallery → share link → open link in second context → run with second key`. No real pollen spent in CI.
+- **Integration (Playwright against a mock Pollinations server):** full happy path `connect → simple run → save to gallery → share link → open link in second context → run with second key`. No real pollen spent in CI. The mock server is **built as part of this project** (small Node script under `tests/mock-pollinations/`) — it stubs the three surface endpoints plus the BYOP authorize/callback redirect dance and serves a handful of canned responses keyed by prompt text.
 - **Manual smoke checklist** in `docs/smoke.md` — the irreducible "before-ship" list executed with a real key.
 - **CI:** GitHub Actions — typecheck, unit, component, Playwright. Build artifact uploaded.
 
