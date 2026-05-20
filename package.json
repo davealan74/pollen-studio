@@ -39,5 +39,8 @@
     "typescript-eslint": "^8",
     "vite": "^5",
     "vitest": "^2"
+  },
+  "dependencies": {
+    "ulid": "^2"
   }
 }
