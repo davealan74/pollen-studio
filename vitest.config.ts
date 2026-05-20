@@ -11,7 +11,11 @@ export default defineConfig({
       }
     },
     setupFiles: ['./tests/setup.ts'],
-    include: ['src/**/*.{test,spec}.ts', 'tests/unit/**/*.{test,spec}.ts'],
+    include: [
+      'src/**/*.{test,spec}.ts',
+      'tests/unit/**/*.{test,spec}.ts',
+      'tests/mock-pollinations/**/*.{test,spec}.ts'
+    ],
     globals: true
   }
 });
