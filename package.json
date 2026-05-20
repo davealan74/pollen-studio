@@ -1,0 +1,29 @@
+{
+  "name": "pollen-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "author": "Dave Alan Caruana / Techmagic <dave@techmagic.info>",
+  "description": "Static BYOP playground for Pollinations.AI — compare image, text, and TTS models side-by-side.",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "lint": "prettier --check . && eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3",
+    "@sveltejs/kit": "^2",
+    "@sveltejs/vite-plugin-svelte": "^4",
+    "@types/node": "^20",
+    "svelte": "^5",
+    "svelte-check": "^4",
+    "typescript": "^5",
+    "vite": "^5"
+  }
+}
