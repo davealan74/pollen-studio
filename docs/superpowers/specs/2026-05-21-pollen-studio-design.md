@@ -10,7 +10,7 @@ Pollen Studio is a static-files browser app that lets users connect their Pollin
 
 **Hosting:** `https://pollenstudio.cru2.net` (newhetzner3 Apache vhost, Cloudflare-proxied, Let's Encrypt cert via DNS-01).
 
-**One-liner:** _Connect your Pollinations account, then explore image, text, and TTS models side-by-side. Share any run as a link your friends can run with their own pollen._
+**One-liner:** *Connect your Pollinations account, then explore image, text, and TTS models side-by-side. Share any run as a link your friends can run with their own pollen.*
 
 ### 1.1 Goals
 
@@ -145,7 +145,7 @@ Key in `localStorage` → skip auth. Header shows a `KeyPill` with `connected �
 Below the Connect button: small link "or paste a key". Modal with textarea + "Where do I get this?" link to `enter.pollinations.ai/dashboard`. Prefix detection:
 
 - `sk_…` — stored, full access.
-- `pk_…` — stored, with a banner warning that pk\_ has a 1 pollen/IP/hour limit.
+- `pk_…` — stored, with a banner warning that pk_ has a 1 pollen/IP/hour limit.
 - Anything else — rejected with a clear error.
 
 ### 3.6 Storage
@@ -178,7 +178,7 @@ type Mode = 'simple' | 'compare' | 'advanced';
 type Request = ImageRequest | TextRequest | AudioRequest;
 
 type Run = {
-  id: string; // ulid
+  id: string;              // ulid
   createdAt: number;
   surface: Surface;
   mode: Mode;
@@ -189,7 +189,7 @@ type Run = {
 
 type RunCell = {
   id: string;
-  variant: Partial<Request>; // differences from the parent request
+  variant: Partial<Request>;  // differences from the parent request
   status: 'pending' | 'ok' | 'error';
   startedAt: number;
   finishedAt?: number;
@@ -212,11 +212,11 @@ Image results store a blob reference (IndexedDB blob id); text results store the
 
 ### 4.3 Shareable runs (URL hash)
 
-- `#run=<base64url(compact-json)>` — encodes only the _request_ (no result blob, no `id`, no timestamps, no defaults that match documented Pollinations defaults).
+- `#run=<base64url(compact-json)>` — encodes only the *request* (no result blob, no `id`, no timestamps, no defaults that match documented Pollinations defaults).
 - Target hash payload ≤ 200 bytes for typical inputs; **hard cap 1500 bytes** (browsers vary but all support ≥2KB URLs comfortably).
 - If a run exceeds the hard cap, the **Share** button shows "this run is too large to share as a link" and offers two fallbacks: (a) **Copy as JSON** (clipboard), or (b) **Download .pollenrun file** which the recipient can drag onto Pollen Studio to import.
 - Opening such a link routes the user to the appropriate mode, pre-fills the inputs, and shows a **Run with my key** button. Clicking spends the recipient's pollen and produces their own result.
-- `#share=<id>` (separate variant) is for self-shares of historical runs _including_ the original result blobs. Resolved locally only; never works on someone else's browser.
+- `#share=<id>` (separate variant) is for self-shares of historical runs *including* the original result blobs. Resolved locally only; never works on someone else's browser.
 
 ## 5. Module Breakdown
 
@@ -274,16 +274,16 @@ Each file has one clear purpose. Stores own their own state and persistence; com
 
 ## 6. Error Handling
 
-| Failure                                                                | Detection                              | UX                                                                                                                                                                                                                             |
-| ---------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| No key set                                                             | `currentKey() === null` before request | Inline "Connect Pollinations to run" prompt; Generate button doubles as Connect CTA                                                                                                                                            |
-| Key expired                                                            | 401 + JWT `exp` past now               | Toast + auto-route to `/auth/start` with deep-link return                                                                                                                                                                      |
-| Budget exhausted                                                       | 402 from API                           | Toast + re-authorize drawer with bigger budget                                                                                                                                                                                 |
-| Rate limit (Flower tier: 1 req/3s per Pollinations API docs, May 2026) | 429                                    | Defensive: Compare mode already paces requests 3.1s apart client-side; on 429, exponential backoff. Pacing constant lives in `lib/pollinations/client.ts` and must be revisited if Pollinations changes their published limit. |
-| Model unavailable                                                      | 404 or specific error code             | Cell shows "model unavailable", offers nearest substitute from `models.ts`                                                                                                                                                     |
-| Network / 5xx                                                          | fetch reject or 5xx                    | Cell error state with Retry; MatrixGrid offers Bulk Retry                                                                                                                                                                      |
-| Quota near full (IDB ≥ 80%)                                            | `navigator.storage.estimate()`         | Non-blocking banner: Purge old / Export & wipe                                                                                                                                                                                 |
-| Corrupt run in IDB                                                     | JSON parse fail on load                | Skip + console log; Settings offers Reset gallery                                                                                                                                                                              |
+| Failure | Detection | UX |
+| --- | --- | --- |
+| No key set | `currentKey() === null` before request | Inline "Connect Pollinations to run" prompt; Generate button doubles as Connect CTA |
+| Key expired | 401 + JWT `exp` past now | Toast + auto-route to `/auth/start` with deep-link return |
+| Budget exhausted | 402 from API | Toast + re-authorize drawer with bigger budget |
+| Rate limit (Flower tier: 1 req/3s per Pollinations API docs, May 2026) | 429 | Defensive: Compare mode already paces requests 3.1s apart client-side; on 429, exponential backoff. Pacing constant lives in `lib/pollinations/client.ts` and must be revisited if Pollinations changes their published limit. |
+| Model unavailable | 404 or specific error code | Cell shows "model unavailable", offers nearest substitute from `models.ts` |
+| Network / 5xx | fetch reject or 5xx | Cell error state with Retry; MatrixGrid offers Bulk Retry |
+| Quota near full (IDB ≥ 80%) | `navigator.storage.estimate()` | Non-blocking banner: Purge old / Export & wipe |
+| Corrupt run in IDB | JSON parse fail on load | Skip + console log; Settings offers Reset gallery |
 
 ## 7. Testing Strategy
 
