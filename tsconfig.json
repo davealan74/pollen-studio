@@ -11,6 +11,7 @@
     "strict": true,
     "moduleResolution": "bundler",
     "module": "esnext",
-    "target": "esnext"
+    "target": "esnext",
+    "types": ["vitest/globals"]
   }
 }
