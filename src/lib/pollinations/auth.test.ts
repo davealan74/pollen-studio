@@ -38,17 +38,17 @@ describe('buildAuthorizeUrl', () => {
 describe('parseCallbackFragment', () => {
   it('returns key when state matches stashed value', () => {
     sessionStorage.setItem(STATE_KEY, 'good');
-    const r = parseCallbackFragment('#api_key=sk_abc&state=good');
-    expect(r).toEqual({ ok: true, key: 'sk_abc' });
+    const r = parseCallbackFragment('#api_key=sk_realisticKey1234&state=good');
+    expect(r).toEqual({ ok: true, key: 'sk_realisticKey1234' });
     expect(sessionStorage.getItem(STATE_KEY)).toBeNull();
   });
   it('rejects state mismatch and never returns the key', () => {
     sessionStorage.setItem(STATE_KEY, 'good');
-    const r = parseCallbackFragment('#api_key=sk_abc&state=bad');
+    const r = parseCallbackFragment('#api_key=sk_realisticKey1234&state=bad');
     expect(r).toEqual({ ok: false, reason: 'state_mismatch' });
   });
   it('rejects when state is missing locally', () => {
-    const r = parseCallbackFragment('#api_key=sk_abc&state=good');
+    const r = parseCallbackFragment('#api_key=sk_realisticKey1234&state=good');
     expect(r.ok).toBe(false);
   });
   it('rejects when api_key prefix is unrecognised', () => {
@@ -60,18 +60,18 @@ describe('parseCallbackFragment', () => {
 
 describe('storeKey / currentKey / clearKey', () => {
   it('persists to localStorage by default', () => {
-    storeKey('sk_local', 'persistent');
-    expect(currentKey()).toBe('sk_local');
-    expect(localStorage.getItem(STORAGE_KEY)).toBe('sk_local');
+    storeKey('sk_localPersistKey01', 'persistent');
+    expect(currentKey()).toBe('sk_localPersistKey01');
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('sk_localPersistKey01');
   });
   it('persists to sessionStorage when mode=session', () => {
-    storeKey('sk_session', 'session');
-    expect(currentKey()).toBe('sk_session');
-    expect(sessionStorage.getItem(STORAGE_KEY)).toBe('sk_session');
+    storeKey('sk_sessionOnlyKey02', 'session');
+    expect(currentKey()).toBe('sk_sessionOnlyKey02');
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBe('sk_sessionOnlyKey02');
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
   it('clearKey wipes both stores', () => {
-    storeKey('sk_a', 'persistent');
+    storeKey('sk_anyValidKey003', 'persistent');
     clearKey();
     expect(currentKey()).toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();

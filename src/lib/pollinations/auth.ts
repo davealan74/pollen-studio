@@ -37,7 +37,7 @@ export function parseCallbackFragment(fragment: string): ParseResult {
   if (!expected) return { ok: false, reason: 'state_missing' };
   if (state !== expected) return { ok: false, reason: 'state_mismatch' };
   if (!key) return { ok: false, reason: 'no_key' };
-  if (!/^(sk|pk)_[A-Za-z0-9_-]{1,}$/.test(key)) return { ok: false, reason: 'bad_key_format' };
+  if (!/^(sk|pk)_[A-Za-z0-9_-]{8,}$/.test(key)) return { ok: false, reason: 'bad_key_format' };
   sessionStorage.removeItem(STATE_KEY);
   return { ok: true, key };
 }
