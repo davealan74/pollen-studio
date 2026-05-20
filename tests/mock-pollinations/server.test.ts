@@ -42,4 +42,21 @@ describe('mock pollinations', () => {
     const json = (await r.json()) as { text: string };
     expect(json.text).toContain('tell me a poem');
   });
+
+  it('handles client abort mid-body without unhandled rejection', async () => {
+    svr = await startMockPollinations();
+    const ctrl = new AbortController();
+    // Start a slow POST and abort it immediately
+    const p = fetch(`${svr.url}/text`, {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { authorization: 'Bearer sk_x', 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'x'.repeat(10_000) })
+    });
+    ctrl.abort();
+    await expect(p).rejects.toThrow();
+    // The mock server should still be responsive
+    const r = await fetch(`${svr.url}/image/ping`, { headers: { authorization: 'Bearer sk_x' } });
+    expect(r.status).toBe(200);
+  });
 });

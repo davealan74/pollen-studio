@@ -4,24 +4,32 @@ import { PNG_BYTES, MP3_BYTES, CANNED_TEXT } from './fixtures.js';
 export interface MockServer {
   url: string;
   close(): Promise<void>;
-  requests: Array<{ method: string; path: string; auth?: string; body?: unknown }>;
+  requests: Array<{ method: string; path: string; auth?: string; token?: string; body?: unknown }>;
 }
 
 export async function startMockPollinations(port = 0): Promise<MockServer> {
   const log: MockServer['requests'] = [];
 
-  const server: Server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+  async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const auth = req.headers['authorization'] as string | undefined;
     const body = await readBody(req);
-    log.push({ method: req.method ?? 'GET', path: url.pathname + url.search, auth, body });
+    const m = auth?.match(/^Bearer\s+(\S+)$/);
+    log.push({
+      method: req.method ?? 'GET',
+      path: url.pathname + url.search,
+      auth,
+      token: m?.[1],
+      body
+    });
 
     if (url.pathname === '/authorize') {
       const redirect = url.searchParams.get('redirect_uri');
       const state = url.searchParams.get('state') ?? '';
       if (!redirect) return send(res, 400, 'missing redirect_uri');
       res.writeHead(302, { Location: `${redirect}#api_key=sk_mock&state=${state}` });
-      return res.end();
+      res.end();
+      return;
     }
 
     if (!auth || !auth.startsWith('Bearer ')) {
@@ -30,7 +38,8 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
 
     if (req.method === 'GET' && url.pathname.startsWith('/image/')) {
       res.writeHead(200, { 'Content-Type': 'image/png' });
-      return res.end(Buffer.from(PNG_BYTES));
+      res.end(Buffer.from(PNG_BYTES));
+      return;
     }
     if (req.method === 'POST' && url.pathname === '/text') {
       const prompt = (body as { prompt?: string })?.prompt ?? '';
@@ -38,9 +47,27 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
     }
     if (req.method === 'POST' && url.pathname === '/audio') {
       res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
-      return res.end(Buffer.from(MP3_BYTES));
+      res.end(Buffer.from(MP3_BYTES));
+      return;
     }
     return sendJson(res, 404, { error: 'not_found', path: url.pathname });
+  }
+
+  const server: Server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    handle(req, res).catch((err) => {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ECONNRESET' || (err as Error).message === 'aborted') return;
+      if (!res.headersSent) {
+        try {
+          sendJson(res, 500, {
+            error: 'handler_threw',
+            message: String((err as Error).message ?? err)
+          });
+        } catch {
+          /* socket gone */
+        }
+      }
+    });
   });
 
   await new Promise<void>((resolve) => server.listen(port, resolve));
@@ -57,7 +84,11 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
 async function readBody(req: IncomingMessage): Promise<unknown> {
   if (req.method !== 'POST') return undefined;
   const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(c as Buffer);
+  try {
+    for await (const c of req) chunks.push(c as Buffer);
+  } catch {
+    return undefined; // client disconnected mid-body
+  }
   if (chunks.length === 0) return undefined;
   const raw = Buffer.concat(chunks).toString('utf8');
   try {
