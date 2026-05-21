@@ -33,8 +33,16 @@ export class UpstreamError extends Error {
 // constant and revisit Compare-mode UX.
 export const DEFAULT_PACING_MS = 3100;
 
+// Pollinations splits its surfaces across subdomains: image generation lives at
+// image.pollinations.ai, text + TTS live at text.pollinations.ai. Each surface
+// module composes its own absolute URL from these bases.
+export interface ClientBases {
+  image: string;
+  text: string;
+}
+
 export interface ClientOptions {
-  base: string;
+  bases: ClientBases;
   pacingMs?: number;
   fetchImpl?: typeof fetch;
 }
@@ -44,13 +52,15 @@ export class PollinationsClient {
   private lastSent = 0;
   private readonly pacingMs: number;
   private readonly fetchImpl: typeof fetch;
+  readonly bases: ClientBases;
 
-  constructor(private readonly opts: ClientOptions) {
+  constructor(opts: ClientOptions) {
+    this.bases = opts.bases;
     this.pacingMs = opts.pacingMs ?? DEFAULT_PACING_MS;
     this.fetchImpl = opts.fetchImpl ?? fetch.bind(globalThis);
   }
 
-  async fetch(path: string, init: RequestInit = {}): Promise<Response> {
+  async fetch(url: string, init: RequestInit = {}): Promise<Response> {
     const key = currentKey();
     if (!key) throw new AuthRequiredError('no Pollinations key configured');
     // Chain on a recoverable version of the queue so one failure doesn't poison
@@ -60,7 +70,7 @@ export class PollinationsClient {
       const gap = this.pacingMs - (Date.now() - this.lastSent);
       if (gap > 0) await new Promise((r) => setTimeout(r, gap));
       this.lastSent = Date.now();
-      const res = await this.fetchImpl(this.opts.base + path, {
+      const res = await this.fetchImpl(url, {
         ...init,
         headers: { ...(init.headers ?? {}), Authorization: `Bearer ${key}` }
       });

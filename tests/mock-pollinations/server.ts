@@ -47,16 +47,24 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
       return sendJson(res, 401, { error: 'unauthenticated' });
     }
 
-    if (req.method === 'GET' && url.pathname.startsWith('/image/')) {
+    // Image: GET /prompt/{p}?...
+    if (req.method === 'GET' && url.pathname.startsWith('/prompt/')) {
       res.writeHead(200, { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': '*' });
       res.end(Buffer.from(PNG_BYTES));
       return;
     }
-    if (req.method === 'POST' && url.pathname === '/text') {
-      const prompt = (body as { prompt?: string })?.prompt ?? '';
-      return sendJson(res, 200, { text: CANNED_TEXT(prompt) });
+    // Text: POST /openai with OpenAI chat-completions body
+    if (req.method === 'POST' && url.pathname === '/openai') {
+      const b = body as
+        | { messages?: Array<{ role?: string; content?: string }>; model?: string }
+        | undefined;
+      const prompt = b?.messages?.find((m) => m.role === 'user')?.content ?? '';
+      return sendJson(res, 200, {
+        choices: [{ message: { role: 'assistant', content: CANNED_TEXT(prompt) } }]
+      });
     }
-    if (req.method === 'POST' && url.pathname === '/audio') {
+    // TTS: GET /{prompt}?model=openai-audio&voice=...
+    if (req.method === 'GET' && url.searchParams.get('model') === 'openai-audio') {
       res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Access-Control-Allow-Origin': '*' });
       res.end(Buffer.from(MP3_BYTES));
       return;

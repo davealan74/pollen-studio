@@ -22,6 +22,6 @@ export async function generateImage(c: PollinationsClient, req: ImageRequest): P
     nologo: 'true'
   });
   if (req.negativePrompt) qs.set('negative_prompt', req.negativePrompt);
-  const res = await c.fetch(`/image/${encodeURIComponent(req.prompt)}?${qs}`);
+  const res = await c.fetch(`${c.bases.image}/prompt/${encodeURIComponent(req.prompt)}?${qs}`);
   return await res.blob();
 }

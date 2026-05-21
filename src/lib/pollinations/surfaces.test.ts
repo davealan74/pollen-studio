@@ -40,7 +40,7 @@ let client: PollinationsClient;
 beforeEach(async () => {
   svr = await startMockPollinations();
   storeKey('sk_testKeyValid01', 'persistent');
-  client = new PollinationsClient({ base: svr.url, pacingMs: 0 });
+  client = new PollinationsClient({ bases: { image: svr.url, text: svr.url }, pacingMs: 0 });
 });
 afterEach(async () => {
   await svr.close();
@@ -61,7 +61,7 @@ describe('generateImage', () => {
     expect(blob.type).toBe('image/png');
     expect(blob.size).toBeGreaterThan(0);
     expect(svr.requests[0].path).toBe(
-      '/image/sunset%20over%20Valletta?model=flux&width=1024&height=1024&quality=high&enhance=false&seed=-1&nologo=true'
+      '/prompt/sunset%20over%20Valletta?model=flux&width=1024&height=1024&quality=high&enhance=false&seed=-1&nologo=true'
     );
   });
 
@@ -75,12 +75,12 @@ describe('generateImage', () => {
       enhance: false,
       seed: 1
     });
-    expect(svr.requests[0].path.startsWith('/image/a%2Fb%3Fc%23d%26e?')).toBe(true);
+    expect(svr.requests[0].path.startsWith('/prompt/a%2Fb%3Fc%23d%26e?')).toBe(true);
   });
 });
 
 describe('generateText', () => {
-  it('returns the canned text body', async () => {
+  it('returns the assistant content from an OpenAI chat-completions response', async () => {
     const out = await generateText(client, {
       prompt: 'haiku about pollen',
       model: 'openai',
@@ -88,30 +88,27 @@ describe('generateText', () => {
       maxTokens: 256
     });
     expect(out).toContain('haiku about pollen');
+    expect(svr.requests[0].path).toBe('/openai');
+    expect(svr.requests[0].method).toBe('POST');
     expect(svr.requests[0].body).toEqual({
-      prompt: 'haiku about pollen',
       model: 'openai',
+      messages: [{ role: 'user', content: 'haiku about pollen' }],
       temperature: 0.7,
-      max_tokens: 256
+      max_tokens: 256,
+      stream: false
     });
   });
 });
 
 describe('generateAudio', () => {
-  it('returns an MP3 blob', async () => {
+  it('returns an MP3 blob from a GET with model=openai-audio', async () => {
     const blob = await generateAudio(client, {
       prompt: 'hello world',
-      model: 'tts-1',
-      voice: 'alloy',
-      speed: 1
+      voice: 'alloy'
     });
     expect(blob.type).toBe('audio/mpeg');
     expect(blob.size).toBeGreaterThan(0);
-    expect(svr.requests[0].body).toEqual({
-      prompt: 'hello world',
-      model: 'tts-1',
-      voice: 'alloy',
-      speed: 1
-    });
+    expect(svr.requests[0].method).toBe('GET');
+    expect(svr.requests[0].path).toBe('/hello%20world?model=openai-audio&voice=alloy');
   });
 });

@@ -16,7 +16,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       VITE_POLLINATIONS_CLIENT_ID: 'pk_test_app',
-      VITE_POLLINATIONS_BASE: 'http://localhost:4180'
+      VITE_POLLINATIONS_IMAGE_BASE: 'http://localhost:4180',
+      VITE_POLLINATIONS_TEXT_BASE: 'http://localhost:4180'
     }
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]

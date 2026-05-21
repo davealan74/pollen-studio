@@ -32,8 +32,11 @@
   let blob = $state<Blob | null>(null);
   let busy = $state(false);
 
-  const base = (import.meta.env.VITE_POLLINATIONS_BASE as string) ?? 'https://pollinations.ai';
-  const client = new PollinationsClient({ base });
+  const imageBase =
+    (import.meta.env.VITE_POLLINATIONS_IMAGE_BASE as string) ?? 'https://image.pollinations.ai';
+  const textBase =
+    (import.meta.env.VITE_POLLINATIONS_TEXT_BASE as string) ?? 'https://text.pollinations.ai';
+  const client = new PollinationsClient({ bases: { image: imageBase, text: textBase } });
 
   onMount(() => {
     loadRuns();
@@ -51,7 +54,7 @@
       seed: String(seed),
       nologo: 'true'
     });
-    const url = `${base}/image/${encodeURIComponent(prompt)}?${qs}`;
+    const url = `${imageBase}/prompt/${encodeURIComponent(prompt)}?${qs}`;
     lastRequest = { method: 'GET', url };
     try {
       blob = await generateImage(client, { prompt, model, width, height, quality, enhance, seed });

@@ -7,17 +7,22 @@ export interface TextRequest {
   maxTokens: number;
 }
 
+interface ChatCompletionResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
 export async function generateText(c: PollinationsClient, req: TextRequest): Promise<string> {
-  const res = await c.fetch('/text', {
+  const res = await c.fetch(`${c.bases.text}/openai`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      prompt: req.prompt,
       model: req.model,
+      messages: [{ role: 'user', content: req.prompt }],
       temperature: req.temperature,
-      max_tokens: req.maxTokens
+      max_tokens: req.maxTokens,
+      stream: false
     })
   });
-  const data = (await res.json()) as { text?: string };
-  return data.text ?? '';
+  const data = (await res.json()) as ChatCompletionResponse;
+  return data.choices?.[0]?.message?.content ?? '';
 }

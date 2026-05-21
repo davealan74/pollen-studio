@@ -23,8 +23,11 @@
   let cells = $state<CellState[]>([]);
   let running = $state(false);
 
-  const base = (import.meta.env.VITE_POLLINATIONS_BASE as string) ?? 'https://pollinations.ai';
-  const client = new PollinationsClient({ base });
+  const imageBase =
+    (import.meta.env.VITE_POLLINATIONS_IMAGE_BASE as string) ?? 'https://image.pollinations.ai';
+  const textBase =
+    (import.meta.env.VITE_POLLINATIONS_TEXT_BASE as string) ?? 'https://text.pollinations.ai';
+  const client = new PollinationsClient({ bases: { image: imageBase, text: textBase } });
 
   const specs = $derived(expand(axes));
   const costInputs = $derived<CostInput[]>(
@@ -78,9 +81,7 @@
           } else {
             const blob = await generateAudio(client, {
               prompt,
-              model: s.model,
-              voice: s.voice ?? 'alloy',
-              speed: s.speed ?? 1
+              voice: s.voice ?? 'alloy'
             });
             cells[i] = { ...cells[i], status: 'ok', blob };
           }

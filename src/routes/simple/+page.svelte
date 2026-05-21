@@ -31,8 +31,11 @@
   let kind = $state<'image' | 'audio'>('image');
   let error = $state<string | null>(null);
 
-  const base = (import.meta.env.VITE_POLLINATIONS_BASE as string) ?? 'https://pollinations.ai';
-  const client = new PollinationsClient({ base });
+  const imageBase =
+    (import.meta.env.VITE_POLLINATIONS_IMAGE_BASE as string) ?? 'https://image.pollinations.ai';
+  const textBase =
+    (import.meta.env.VITE_POLLINATIONS_TEXT_BASE as string) ?? 'https://text.pollinations.ai';
+  const client = new PollinationsClient({ bases: { image: imageBase, text: textBase } });
 
   async function generate() {
     if (!keyStore.key || !prompt.trim()) return;
@@ -59,9 +62,7 @@
         const req = vibe.request;
         blob = await generateAudio(client, {
           prompt,
-          model: String(req.model),
-          voice: String(req.voice),
-          speed: Number(req.speed)
+          voice: String(req.voice)
         } satisfies AudioRequest);
       }
     } catch (e) {

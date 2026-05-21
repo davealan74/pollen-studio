@@ -2,21 +2,13 @@ import type { PollinationsClient } from './client';
 
 export interface AudioRequest {
   prompt: string;
-  model: string;
   voice: string;
-  speed: number;
 }
 
+// Pollinations TTS is a GET on text.pollinations.ai/{prompt}?model=openai-audio&voice=...
+// returning raw MP3 bytes. There is no speed/rate parameter on the public endpoint.
 export async function generateAudio(c: PollinationsClient, req: AudioRequest): Promise<Blob> {
-  const res = await c.fetch('/audio', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      prompt: req.prompt,
-      model: req.model,
-      voice: req.voice,
-      speed: req.speed
-    })
-  });
+  const qs = new URLSearchParams({ model: 'openai-audio', voice: req.voice });
+  const res = await c.fetch(`${c.bases.text}/${encodeURIComponent(req.prompt)}?${qs}`);
   return await res.blob();
 }

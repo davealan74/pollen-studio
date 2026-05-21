@@ -17,6 +17,6 @@ pnpm build
 REMOTE="root@newhetzner3"
 DEST="/var/www/autodom/pollenstudio.cru2.net/htdocs/"
 
-rsync -avz --delete --exclude='.well-known/' build/ "${REMOTE}:${DEST}"
+rsync -avz --delete --exclude='.well-known/' --exclude='.htaccess' build/ "${REMOTE}:${DEST}"
 ssh "${REMOTE}" "chown -R apache:apache ${DEST}"
 echo "Deployed."
