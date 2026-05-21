@@ -1,6 +1,6 @@
 <footer>
   <span
-    >© 2026 <a href="https://techmagic.info" target="_blank" rel="noopener"
+    >© 2026 <a href="https://techmagic.info" target="_blank" rel="noopener noreferrer"
       >Dave Alan Caruana / Techmagic</a
     ></span
   >

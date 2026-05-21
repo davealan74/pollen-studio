@@ -18,7 +18,11 @@
   <a class="brand" href="/">Pollen Studio</a>
   <nav class="modes">
     {#each modes as m}
-      <a href={m.href} class:active={$page.url.pathname.startsWith(m.href)}>{m.label}</a>
+      <a
+        href={m.href}
+        class:active={$page.url.pathname === m.href || $page.url.pathname.startsWith(m.href + '/')}
+        >{m.label}</a
+      >
     {/each}
   </nav>
   <div class="key">
