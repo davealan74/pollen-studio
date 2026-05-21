@@ -8,3 +8,5 @@ dist/
 .vite/
 .svelte-kit/
 build/
+test-results/
+playwright-report/
