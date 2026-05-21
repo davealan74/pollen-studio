@@ -27,7 +27,9 @@
   </nav>
   <div class="key">
     {#if keyStore.key}
-      <a href="/auth/start" class="pill connected">connected</a>
+      {#await import('$components/KeyPill.svelte') then m}
+        <m.default />
+      {/await}
     {:else}
       <a href="/auth/start" class="pill">Connect</a>
     {/if}
@@ -72,10 +74,6 @@
     border-radius: 999px;
     text-decoration: none;
     font-size: 13px;
-  }
-  .pill.connected {
-    border-color: var(--accent);
-    color: var(--accent);
   }
   main {
     min-height: calc(100vh - 130px);

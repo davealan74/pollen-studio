@@ -11,6 +11,9 @@ const localStorageFile = path.join(os.tmpdir(), 'vitest-localstorage.json');
 
 export default defineConfig({
   plugins: [sveltekit()],
+  resolve: {
+    conditions: ['browser']
+  },
   test: {
     environment: 'happy-dom',
     environmentOptions: {
