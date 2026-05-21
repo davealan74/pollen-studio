@@ -56,6 +56,25 @@ describe('parseCallbackFragment', () => {
     const r = parseCallbackFragment('#api_key=zzz_bad&state=good');
     expect(r).toEqual({ ok: false, reason: 'bad_key_format' });
   });
+  it('does not consume state on state_mismatch', () => {
+    sessionStorage.setItem(STATE_KEY, 'good');
+    parseCallbackFragment('#api_key=sk_realisticKey1234&state=bad');
+    expect(sessionStorage.getItem(STATE_KEY)).toBe('good');
+  });
+  it('does not consume state on bad_key_format', () => {
+    sessionStorage.setItem(STATE_KEY, 'good');
+    parseCallbackFragment('#api_key=zzz_bad&state=good');
+    expect(sessionStorage.getItem(STATE_KEY)).toBe('good');
+  });
+  it('rejects with no_key when api_key absent', () => {
+    sessionStorage.setItem(STATE_KEY, 'good');
+    const r = parseCallbackFragment('#state=good');
+    expect(r).toEqual({ ok: false, reason: 'no_key' });
+  });
+  it('rejects with state_missing when no state stashed', () => {
+    const r = parseCallbackFragment('#api_key=sk_realisticKey1234&state=anything');
+    expect(r).toEqual({ ok: false, reason: 'state_missing' });
+  });
 });
 
 describe('storeKey / currentKey / clearKey', () => {
@@ -76,5 +95,21 @@ describe('storeKey / currentKey / clearKey', () => {
     expect(currentKey()).toBeNull();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+  it('mode switch from persistent to session clears localStorage', () => {
+    storeKey('sk_oldPersistentKey99', 'persistent');
+    storeKey('sk_newSessionOnlyKey88', 'session');
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBe('sk_newSessionOnlyKey88');
+    expect(currentKey()).toBe('sk_newSessionOnlyKey88');
+  });
+  it('mode switch from session to persistent clears sessionStorage', () => {
+    storeKey('sk_oldSessionOnlyKey77', 'session');
+    storeKey('sk_newPersistentKey66', 'persistent');
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('sk_newPersistentKey66');
+  });
+  it('storeKey throws on invalid key shape', () => {
+    expect(() => storeKey('not-a-key', 'persistent')).toThrow();
   });
 });

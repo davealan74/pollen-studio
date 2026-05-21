@@ -3,6 +3,12 @@ export const STORAGE_KEY = 'pollen_studio.key';
 
 export type StorageMode = 'persistent' | 'session';
 
+const KEY_SHAPE = /^(sk|pk)_[A-Za-z0-9][A-Za-z0-9_-]{7,255}$/;
+
+function isValidKeyShape(key: string): boolean {
+  return KEY_SHAPE.test(key);
+}
+
 export interface AuthorizeParams {
   authorizeBase: string;
   clientId: string;
@@ -37,19 +43,18 @@ export function parseCallbackFragment(fragment: string): ParseResult {
   if (!expected) return { ok: false, reason: 'state_missing' };
   if (state !== expected) return { ok: false, reason: 'state_mismatch' };
   if (!key) return { ok: false, reason: 'no_key' };
-  if (!/^(sk|pk)_[A-Za-z0-9_-]{8,}$/.test(key)) return { ok: false, reason: 'bad_key_format' };
+  if (!isValidKeyShape(key)) return { ok: false, reason: 'bad_key_format' };
   sessionStorage.removeItem(STATE_KEY);
   return { ok: true, key };
 }
 
 export function storeKey(key: string, mode: StorageMode): void {
-  if (mode === 'session') {
-    sessionStorage.setItem(STORAGE_KEY, key);
-    localStorage.removeItem(STORAGE_KEY);
-  } else {
-    localStorage.setItem(STORAGE_KEY, key);
-    sessionStorage.removeItem(STORAGE_KEY);
-  }
+  if (!isValidKeyShape(key)) throw new Error('invalid key shape');
+  // Clear both first so currentKey() has a single source of truth even if the
+  // setItem call below throws (e.g. QuotaExceededError).
+  localStorage.removeItem(STORAGE_KEY);
+  sessionStorage.removeItem(STORAGE_KEY);
+  (mode === 'session' ? sessionStorage : localStorage).setItem(STORAGE_KEY, key);
 }
 
 export function currentKey(): string | null {
