@@ -9,6 +9,7 @@
   import { keyStore } from '$stores/key.svelte';
   import { loadRuns, saveRun } from '$stores/runs.svelte';
   import { showToast } from '$stores/toast.svelte';
+  import { handleAuthError } from '$pollinations/errors';
   import { PollinationsClient } from '$pollinations/client';
   import { generateImage } from '$pollinations/image';
   import { newId } from '$utils/ulid';
@@ -69,7 +70,7 @@
         cells: []
       });
     } catch (e) {
-      showToast((e as Error).message, 'error');
+      if (!handleAuthError(e, { onToast: showToast })) showToast((e as Error).message, 'error');
     } finally {
       busy = false;
     }

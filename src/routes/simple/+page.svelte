@@ -11,6 +11,7 @@
   import { generateAudio, type AudioRequest } from '$pollinations/audio';
   import { newId } from '$utils/ulid';
   import { encodeShareHash, decodeShareHash, ShareTooLargeError } from '$stores/share.svelte';
+  import { handleAuthError } from '$pollinations/errors';
   import { onMount } from 'svelte';
 
   onMount(() => {
@@ -65,7 +66,7 @@
       }
     } catch (e) {
       error = (e as Error).message;
-      showToast(error, 'error');
+      if (!handleAuthError(e, { onToast: showToast })) showToast(error, 'error');
     } finally {
       busy = false;
     }

@@ -6,6 +6,7 @@
   import KeyConnect from '$components/KeyConnect.svelte';
   import { keyStore } from '$stores/key.svelte';
   import { showToast } from '$stores/toast.svelte';
+  import { handleAuthError } from '$pollinations/errors';
   import { expand, type Axes, type CellState } from './matrix';
   import { PollinationsClient } from '$pollinations/client';
   import { generateImage } from '$pollinations/image';
@@ -85,6 +86,7 @@
           }
         } catch (e) {
           cells[i] = { ...cells[i], status: 'error', error: (e as Error).message };
+          if (!handleAuthError(e, { onToast: showToast })) showToast((e as Error).message, 'error');
         }
         cells = [...cells];
       })

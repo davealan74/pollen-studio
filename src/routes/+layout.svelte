@@ -36,6 +36,10 @@
   </div>
 </header>
 
+{#await import('$components/QuotaBanner.svelte') then m}
+  <m.default />
+{/await}
+
 <main>{@render children()}</main>
 <Footer />
 <Toast />
