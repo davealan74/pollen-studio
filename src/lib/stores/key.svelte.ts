@@ -7,7 +7,7 @@ interface KeyState {
 }
 
 export const keyStore = $state<KeyState>({
-  key: currentKey(),
+  key: typeof localStorage !== 'undefined' ? currentKey() : null,
   mode: 'persistent'
 });
 
