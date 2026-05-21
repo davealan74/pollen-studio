@@ -57,4 +57,22 @@ describe('idb', () => {
     expect(out).not.toBeNull();
     expect(await out!.text()).toBe('hi');
   });
+
+  it('deleteRun removes the run AND its blobs', async () => {
+    const runId = '01HXTESTRUN0000000000000000';
+    await putRun(sampleRun(runId));
+    await putBlob(`${runId}:0`, new Blob(['c0'], { type: 'image/png' }));
+    await putBlob(`${runId}:1`, new Blob(['c1'], { type: 'image/png' }));
+    await putBlob('01HXOTHERRUN000000000000000:0', new Blob(['other'], { type: 'image/png' }));
+    await deleteRun(runId);
+    expect(await getBlob(`${runId}:0`)).toBeNull();
+    expect(await getBlob(`${runId}:1`)).toBeNull();
+    // Other run's blob untouched:
+    const other = await getBlob('01HXOTHERRUN000000000000000:0');
+    expect(other).not.toBeNull();
+  });
+
+  it('getBlob returns null on missing key', async () => {
+    expect(await getBlob('does-not-exist:0')).toBeNull();
+  });
 });

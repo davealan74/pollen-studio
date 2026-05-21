@@ -1,3 +1,16 @@
+/**
+ * Public API
+ *   putRun(run)           – upsert a StoredRun
+ *   listRuns()            – all runs, newest-first
+ *   deleteRun(id)         – delete run + its blobs (see cellId convention below)
+ *   putBlob(cellId, blob) – store a Blob; cellId MUST follow the convention below
+ *   getBlob(cellId)       – retrieve a Blob or null
+ *
+ * cellId convention
+ *   Every blob key MUST have the form `${runId}:${cellIndex}` (e.g. "01HXY...:0").
+ *   This allows deleteRun() to sweep all blobs for a run atomically using an
+ *   IDBKeyRange over the ':' … ';' byte boundary (0x3A–0x3B).
+ */
 import { openDB, type IDBPDatabase } from 'idb';
 
 export interface StoredRun {
@@ -48,9 +61,20 @@ export async function listRuns(): Promise<StoredRun[]> {
 
 export async function deleteRun(id: string): Promise<void> {
   const db = await openDb();
-  await db.delete('runs', id);
+  const tx = db.transaction(['runs', 'blobs'], 'readwrite');
+  await tx.objectStore('runs').delete(id);
+  const blobs = tx.objectStore('blobs');
+  // ':' = 0x3A, ';' = 0x3B — sweeps all keys of the form `${id}:*`
+  const range = IDBKeyRange.bound(`${id}:`, `${id};`, false, false);
+  for await (const c of blobs.iterate(range)) await c.delete();
+  await tx.done;
 }
 
+/**
+ * Store a Blob under the given cellId.
+ * cellId MUST follow the convention `${runId}:${cellIndex}` (e.g. "01HXY...:0")
+ * so that deleteRun() can sweep all blobs for a run in a single transaction.
+ */
 export async function putBlob(cellId: string, b: Blob): Promise<void> {
   const db = await openDb();
   const buffer = await b.arrayBuffer();
@@ -59,9 +83,12 @@ export async function putBlob(cellId: string, b: Blob): Promise<void> {
 
 export async function getBlob(cellId: string): Promise<Blob | null> {
   const db = await openDb();
-  const stored = await db.get('blobs', cellId);
-  if (!stored) return null;
-  return new Blob([stored.buffer], { type: stored.type });
+  const stored = (await db.get('blobs', cellId)) as unknown;
+  if (stored == null) return null;
+  if (stored instanceof Blob) return stored;
+  const rec = stored as { buffer?: ArrayBuffer; type?: string };
+  if (!rec.buffer) return null;
+  return new Blob([rec.buffer], { type: rec.type ?? 'application/octet-stream' });
 }
 
 export async function _resetForTests(): Promise<void> {
