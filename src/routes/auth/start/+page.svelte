@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { buildAuthorizeUrl } from '$pollinations/auth';
-  import { keyStore } from '$stores/key.svelte';
+  import { keyStore, setKey } from '$stores/key.svelte';
   import { goto } from '$app/navigation';
 
   const clientId = import.meta.env.VITE_POLLINATIONS_CLIENT_ID as string;
@@ -29,14 +29,13 @@
     location.assign(url);
   }
 
-  async function applyPasted() {
+  function applyPasted() {
     pasteError = '';
     const k = pasted.trim();
     if (!/^(sk|pk)_[A-Za-z0-9][A-Za-z0-9_-]{7,255}$/.test(k)) {
       pasteError = 'Key must start with sk_ or pk_.';
       return;
     }
-    const { setKey } = await import('$stores/key.svelte');
     setKey(k, 'persistent');
     goto('/simple', { replaceState: true });
   }
@@ -62,7 +61,7 @@
   {#if pasting}
     <div class="paste">
       <textarea bind:value={pasted} rows="3" placeholder="sk_… or pk_…"></textarea>
-      <a href="https://enter.pollinations.ai/dashboard" target="_blank" rel="noopener"
+      <a href="https://enter.pollinations.ai/dashboard" target="_blank" rel="noopener noreferrer"
         >Where do I get this?</a
       >
       {#if pasteError}<p class="err">{pasteError}</p>{/if}
