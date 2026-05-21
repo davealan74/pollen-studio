@@ -3,11 +3,15 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import os from 'os';
 import path from 'path';
 
-// Node 25 exposes a native localStorage global (via --localstorage-file) that
+// Node 22+ exposes a native localStorage global (via --localstorage-file) that
 // vitest's happy-dom environment does not override. Providing a valid temp file
-// path silences the warning and gives Node's localStorage a proper implementation,
-// which happy-dom then shadows correctly in each test worker.
-const localStorageFile = path.join(os.tmpdir(), 'vitest-localstorage.json');
+// path silences the warning. On Node <22 the flag is unknown and crashes the
+// worker, so we only set it when supported (e.g. CI's Ubuntu Node 20 image).
+const nodeMajor = Number(process.versions.node.split('.')[0]);
+const localStorageArgv =
+  nodeMajor >= 22
+    ? [`--localstorage-file=${path.join(os.tmpdir(), 'vitest-localstorage.json')}`]
+    : [];
 
 export default defineConfig({
   plugins: [sveltekit()],
@@ -29,12 +33,8 @@ export default defineConfig({
     ],
     globals: true,
     poolOptions: {
-      forks: {
-        execArgv: [`--localstorage-file=${localStorageFile}`]
-      },
-      threads: {
-        execArgv: [`--localstorage-file=${localStorageFile}`]
-      }
+      forks: { execArgv: localStorageArgv },
+      threads: { execArgv: localStorageArgv }
     }
   }
 });
