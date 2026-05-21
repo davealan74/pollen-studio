@@ -45,8 +45,7 @@
           : {
               surface: 'audio' as const,
               model: s.model,
-              voice: s.voice ?? 'alloy',
-              speed: s.speed ?? 1
+              voice: s.voice ?? 'alloy'
             }
     )
   );

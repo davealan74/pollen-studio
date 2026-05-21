@@ -11,6 +11,7 @@ describe('CostEstimate', () => {
     ];
     render(CostEstimate, { cells });
     expect(screen.getByText(/2 cells/)).toBeInTheDocument();
-    expect(screen.getByText(/2\.50/)).toBeInTheDocument();
+    // 2 × flux @ 0.001 = 0.002 pollen · +25% = 0.0025
+    expect(screen.getByText(/0\.0025/)).toBeInTheDocument();
   });
 });

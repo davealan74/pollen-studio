@@ -5,12 +5,15 @@
   }
   let { cells }: Props = $props();
   const cost = $derived(totalCost(cells));
-  const withSurcharge = $derived(Math.round(cost * 1.25 * 100) / 100);
+  const withSurcharge = $derived(cost * 1.25);
+  // Pollinations rates run from 0.001 to a few tenths of a pollen; 4 decimals
+  // keeps cheap matrices from collapsing to "0.00 pollen" while staying readable.
+  const fmt = (n: number) => (n >= 1 ? n.toFixed(2) : n.toFixed(4));
 </script>
 
 <div class="strip">
   <span>{cells.length} cell{cells.length === 1 ? '' : 's'}</span>
-  <span>~ {cost.toFixed(2)} pollen · +25% = <strong>{withSurcharge.toFixed(2)}</strong></span>
+  <span>~ {fmt(cost)} pollen · +25% = <strong>{fmt(withSurcharge)}</strong></span>
 </div>
 
 <style>
