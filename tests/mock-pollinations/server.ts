@@ -23,6 +23,17 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
       body
     });
 
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type'
+      });
+      res.end();
+      return;
+    }
+
     if (url.pathname === '/authorize') {
       const redirect = url.searchParams.get('redirect_uri');
       const state = url.searchParams.get('state') ?? '';
@@ -37,7 +48,7 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
     }
 
     if (req.method === 'GET' && url.pathname.startsWith('/image/')) {
-      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Access-Control-Allow-Origin': '*' });
       res.end(Buffer.from(PNG_BYTES));
       return;
     }
@@ -46,7 +57,7 @@ export async function startMockPollinations(port = 0): Promise<MockServer> {
       return sendJson(res, 200, { text: CANNED_TEXT(prompt) });
     }
     if (req.method === 'POST' && url.pathname === '/audio') {
-      res.writeHead(200, { 'Content-Type': 'audio/mpeg' });
+      res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Access-Control-Allow-Origin': '*' });
       res.end(Buffer.from(MP3_BYTES));
       return;
     }
@@ -98,11 +109,13 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   }
 }
 
+const CORS = { 'Access-Control-Allow-Origin': '*' };
+
 function send(res: ServerResponse, status: number, body: string) {
-  res.writeHead(status, { 'Content-Type': 'text/plain' });
+  res.writeHead(status, { 'Content-Type': 'text/plain', ...CORS });
   res.end(body);
 }
 function sendJson(res: ServerResponse, status: number, body: unknown) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.writeHead(status, { 'Content-Type': 'application/json', ...CORS });
   res.end(JSON.stringify(body));
 }
