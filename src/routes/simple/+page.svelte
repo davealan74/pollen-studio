@@ -10,7 +10,18 @@
   import { generateImage, type ImageRequest } from '$pollinations/image';
   import { generateAudio, type AudioRequest } from '$pollinations/audio';
   import { newId } from '$utils/ulid';
-  import { encodeShareHash, ShareTooLargeError } from '$stores/share.svelte';
+  import { encodeShareHash, decodeShareHash, ShareTooLargeError } from '$stores/share.svelte';
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    const payload = decodeShareHash(location.hash);
+    if (payload && payload.mode === 'simple') {
+      prompt = payload.prompt;
+      const vibeId = (payload.request as { vibe?: string })?.vibe;
+      if (typeof vibeId === 'string') chosen = vibeId;
+      showToast('Loaded shared run. Click Generate to run with your key.', 'info');
+    }
+  });
 
   let prompt = $state('');
   let chosen = $state<string>('photoreal');
