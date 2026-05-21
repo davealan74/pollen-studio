@@ -1,21 +1,30 @@
 import { currentKey } from './auth';
 
 export class AuthRequiredError extends Error {
-  name = 'AuthRequiredError';
+  constructor(message?: string) {
+    super(message);
+    this.name = 'AuthRequiredError';
+  }
 }
 export class BudgetExhaustedError extends Error {
-  name = 'BudgetExhaustedError';
+  constructor(message?: string) {
+    super(message);
+    this.name = 'BudgetExhaustedError';
+  }
 }
 export class RateLimitedError extends Error {
-  name = 'RateLimitedError';
+  constructor(message?: string) {
+    super(message);
+    this.name = 'RateLimitedError';
+  }
 }
 export class UpstreamError extends Error {
-  name = 'UpstreamError';
   constructor(
     public status: number,
     message: string
   ) {
     super(message);
+    this.name = 'UpstreamError';
   }
 }
 
@@ -44,7 +53,10 @@ export class PollinationsClient {
   async fetch(path: string, init: RequestInit = {}): Promise<Response> {
     const key = currentKey();
     if (!key) throw new AuthRequiredError('no Pollinations key configured');
-    return (this.queue = this.queue.then(async () => {
+    // Chain on a recoverable version of the queue so one failure doesn't poison
+    // future calls. The current error still propagates through `next` to its caller.
+    const prev = this.queue.catch(() => undefined);
+    const next: Promise<Response> = prev.then(async () => {
       const gap = this.pacingMs - (Date.now() - this.lastSent);
       if (gap > 0) await new Promise((r) => setTimeout(r, gap));
       this.lastSent = Date.now();
@@ -57,7 +69,9 @@ export class PollinationsClient {
       if (res.status === 429) throw new RateLimitedError('rate limit hit');
       if (res.status >= 500) throw new UpstreamError(res.status, await safeText(res));
       return res;
-    })) as Promise<Response>;
+    });
+    this.queue = next;
+    return next;
   }
 }
 

@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { startMockPollinations, type MockServer } from '../../../tests/mock-pollinations/server';
-import { PollinationsClient } from './client';
+import {
+  PollinationsClient,
+  AuthRequiredError,
+  BudgetExhaustedError,
+  RateLimitedError,
+  UpstreamError
+} from './client';
 import { storeKey, clearKey } from './auth';
 
 // Provide localStorage + sessionStorage shims so auth.ts works in the node environment.
@@ -62,5 +68,49 @@ describe('PollinationsClient', () => {
     await Promise.all([c.fetch('/image/a'), c.fetch('/image/b'), c.fetch('/image/c')]);
     // 2 gaps × 60 ms = 120 ms ideal; allow 10 ms slack so CI runners don't false-fail.
     expect(Date.now() - start).toBeGreaterThanOrEqual(110);
+  });
+
+  const respondWith =
+    (status: number, body = ''): typeof fetch =>
+    async () =>
+      new Response(body, { status });
+
+  it('throws AuthRequiredError on 401', async () => {
+    const c = new PollinationsClient({ base: svr.url, pacingMs: 0, fetchImpl: respondWith(401) });
+    await expect(c.fetch('/image/x')).rejects.toBeInstanceOf(AuthRequiredError);
+  });
+
+  it('throws BudgetExhaustedError on 402', async () => {
+    const c = new PollinationsClient({ base: svr.url, pacingMs: 0, fetchImpl: respondWith(402) });
+    await expect(c.fetch('/image/x')).rejects.toBeInstanceOf(BudgetExhaustedError);
+  });
+
+  it('throws RateLimitedError on 429', async () => {
+    const c = new PollinationsClient({ base: svr.url, pacingMs: 0, fetchImpl: respondWith(429) });
+    await expect(c.fetch('/image/x')).rejects.toBeInstanceOf(RateLimitedError);
+  });
+
+  it('throws UpstreamError with status on 503', async () => {
+    const c = new PollinationsClient({
+      base: svr.url,
+      pacingMs: 0,
+      fetchImpl: respondWith(503, 'oops')
+    });
+    const err = await c.fetch('/image/x').catch((e) => e);
+    expect(err).toBeInstanceOf(UpstreamError);
+    expect(err.status).toBe(503);
+  });
+
+  it('does not poison the queue after an error', async () => {
+    let n = 0;
+    const fetchImpl: typeof fetch = async () => {
+      n++;
+      if (n === 1) return new Response('rate limited', { status: 429 });
+      return new Response('ok', { status: 200 });
+    };
+    const c = new PollinationsClient({ base: svr.url, pacingMs: 0, fetchImpl });
+    await expect(c.fetch('/image/a')).rejects.toMatchObject({ name: 'RateLimitedError' });
+    const r = await c.fetch('/image/b');
+    expect(r.status).toBe(200);
   });
 });
