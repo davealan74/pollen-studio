@@ -41,6 +41,7 @@
     "vitest": "^2"
   },
   "dependencies": {
+    "idb": "^8",
     "ulid": "^2"
   }
 }
