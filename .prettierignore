@@ -2,3 +2,4 @@ build/
 .svelte-kit/
 pnpm-lock.yaml
 docs/
+test-results/
