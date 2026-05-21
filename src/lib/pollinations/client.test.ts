@@ -1,8 +1,36 @@
-// @vitest-environment-options {"settings": {"fetch": {"disableSameOriginPolicy": true}}}
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+// @vitest-environment node
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { startMockPollinations, type MockServer } from '../../../tests/mock-pollinations/server';
 import { PollinationsClient } from './client';
 import { storeKey, clearKey } from './auth';
+
+// Provide localStorage + sessionStorage shims so auth.ts works in the node environment.
+// This is intentionally kept in the test file — production code must NOT depend on
+// happy-dom-specific behaviour.
+function makeStorage(): Storage {
+  const store: Record<string, string> = {};
+  return {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+    removeItem: (k: string) => {
+      delete store[k];
+    },
+    clear: () => {
+      for (const k of Object.keys(store)) delete store[k];
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: (i: number) => Object.keys(store)[i] ?? null
+  };
+}
+
+beforeAll(() => {
+  (globalThis as Record<string, unknown>).localStorage = makeStorage();
+  (globalThis as Record<string, unknown>).sessionStorage = makeStorage();
+});
 
 let svr: MockServer;
 beforeEach(async () => {

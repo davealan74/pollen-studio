@@ -49,7 +49,6 @@ export class PollinationsClient {
       if (gap > 0) await new Promise((r) => setTimeout(r, gap));
       this.lastSent = Date.now();
       const res = await this.fetchImpl(this.opts.base + path, {
-        credentials: 'include',
         ...init,
         headers: { ...(init.headers ?? {}), Authorization: `Bearer ${key}` }
       });
