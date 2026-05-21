@@ -1,15 +1,23 @@
 <script lang="ts">
   import { keyStore, disconnect } from '$stores/key.svelte';
   let open = $state(false);
+  let wrap: HTMLDivElement | undefined = $state();
   const budgetLabel = $derived.by(() => {
     if (!keyStore.budget) return '';
     const days = Math.max(0, Math.round((keyStore.budget.expiresAt - Date.now()) / 86_400_000));
     return `${keyStore.budget.used}/${keyStore.budget.cap} · ${days}d`;
   });
+
+  function onWindowPointerDown(e: PointerEvent) {
+    if (!open || !wrap) return;
+    if (!wrap.contains(e.target as Node)) open = false;
+  }
 </script>
 
+<svelte:window onpointerdown={onWindowPointerDown} />
+
 {#if keyStore.key}
-  <div class="pill-wrap">
+  <div class="pill-wrap" bind:this={wrap}>
     <button class="pill" onclick={() => (open = !open)}>
       connected{#if budgetLabel}
         · {budgetLabel}{/if}
