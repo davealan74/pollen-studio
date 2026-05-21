@@ -11,7 +11,12 @@ export async function generateAudio(c: PollinationsClient, req: AudioRequest): P
   const res = await c.fetch('/audio', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(req)
+    body: JSON.stringify({
+      prompt: req.prompt,
+      model: req.model,
+      voice: req.voice,
+      speed: req.speed
+    })
   });
   return await res.blob();
 }

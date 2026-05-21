@@ -60,6 +60,22 @@ describe('generateImage', () => {
     });
     expect(blob.type).toBe('image/png');
     expect(blob.size).toBeGreaterThan(0);
+    expect(svr.requests[0].path).toBe(
+      '/image/sunset%20over%20Valletta?model=flux&width=1024&height=1024&quality=high&enhance=false&seed=-1&nologo=true'
+    );
+  });
+
+  it('percent-encodes prompts containing /, ?, #, &', async () => {
+    await generateImage(client, {
+      prompt: 'a/b?c#d&e',
+      model: 'flux',
+      width: 512,
+      height: 512,
+      quality: 'high',
+      enhance: false,
+      seed: 1
+    });
+    expect(svr.requests[0].path.startsWith('/image/a%2Fb%3Fc%23d%26e?')).toBe(true);
   });
 });
 
@@ -72,6 +88,12 @@ describe('generateText', () => {
       maxTokens: 256
     });
     expect(out).toContain('haiku about pollen');
+    expect(svr.requests[0].body).toEqual({
+      prompt: 'haiku about pollen',
+      model: 'openai',
+      temperature: 0.7,
+      max_tokens: 256
+    });
   });
 });
 
@@ -85,5 +107,11 @@ describe('generateAudio', () => {
     });
     expect(blob.type).toBe('audio/mpeg');
     expect(blob.size).toBeGreaterThan(0);
+    expect(svr.requests[0].body).toEqual({
+      prompt: 'hello world',
+      model: 'tts-1',
+      voice: 'alloy',
+      speed: 1
+    });
   });
 });
